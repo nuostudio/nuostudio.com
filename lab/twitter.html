@@ -1,0 +1,344 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<link rel="shortcut icon" href="img/favicon.ico">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Twitter</title>
+<style type="text/css">
+body{
+	background:#1A1A1A;
+	color:#666;
+	margin:0;
+	padding:0;	
+}
+#main{
+	width:500px;
+	margin:10% auto;	
+}
+#nav{
+	margin-top:20px;	
+}
+#nav ul{
+	list-style:none;
+	margin:0;
+	padding:0;
+	text-align:center;
+}
+#nav ul li{
+	margin:0;
+	padding:0;
+	display:inline-block;
+	font-size:20px;	
+}
+#nav ul li a{
+	width:83px;
+	padding:34px 0;
+	display:block;background:#fff;
+	color:#000;
+	border-radius:52px;
+	text-decoration:none;
+	text-align:center;
+	text-transform:uppercase;
+	font-family:Arial, Helvetica, sans-serif;
+	margin:0 20px;	
+	font-size:12px;
+}
+#nav ul li a:hover{
+	background:#000;
+	color:#fff;
+	
+}
+#web{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;	
+}
+#fps{
+	font-family:"Courier New", Courier, monospace;
+	font-size:13px;
+	position:absolute;
+	top:3px;
+	right:3px;	
+}
+.tweet{
+	position:absolute;
+	border-radius:20px;
+	width:300px;	
+	color:#FFF;
+	padding:20px;
+}
+#searching{
+	position:absolute;
+	top:0;
+	left:0;
+	width:100%;
+	text-align:center;	
+}
+</style>
+<link href='http://fonts.googleapis.com/css?family=Bowlby+One+SC|Oswald|Cabin&v2' rel='stylesheet' type='text/css'>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+<script type="text/javascript" language="javascript">
+<!--
+// VARIABLES
+var ctx;
+var WIDTH;
+var HEIGHT;
+
+var canvasMinX;
+var canvasMaxX;
+
+var canvasMinY;
+var canvasMaxY;
+
+var ms = {x:0, y:0}; // Mouse speed
+var mp = {x:0, y:0}; // Mouse position
+
+var initial = 5;
+var ball = new Array();
+
+var speedMax = 2;
+var minRadius = 1;
+var maxRadius = 50;
+var miniRatio = 0.004;
+
+var fps = 0, now, lastUpdate = (new Date)*1 - 1;
+var fpsFilter = 50;
+
+var colors = {'nuostudio':'#09C',
+			  '#love':'#eb0000',
+			  '#hate':'#090',
+			  '#music':'#96F'};
+var since_id = {'nuostudio':0,
+			    '#love':0,
+			    '#hate':0,
+			    '#music':0};
+// INICIO
+$(document).ready(function(){
+	ctx = $('#bg')[0].getContext("2d");
+	// Adaptamos a la ventana:
+	ctx.canvas.width  = window.innerWidth;
+  	ctx.canvas.height = window.innerHeight;
+	// Actualizamos las variables:
+	WIDTH = $("#bg").width();
+  	HEIGHT = $("#bg").height();
+	
+	canvasMinX = $("#bg").offset().left;
+  	canvasMaxX = canvasMinX + WIDTH;
+	
+	canvasMinY = $("#bg").offset().top;
+  	canvasMaxY = canvasMinY + HEIGHT;
+	
+	// Twitter balls
+	function addBall(id,user,text,color){
+		ball.push({ 
+			x: WIDTH*Math.random(),
+			y: HEIGHT*Math.random(),
+			dx:randDir(),
+			dy:randDir(),
+			show:true,
+			color:color,
+			radius:40,
+			id:id,
+			user:user,
+			text:text
+		});
+	}
+	
+	
+	/*function updateBalls(topic){
+		// Poll twitterFind and create the balls
+		$.get("twitterFind.php", { since:since_id[topic], search:topic },
+		  function(data){
+				// Registration complete!
+				$.each(data, function(i,tweet){
+					//alert('@'+tweet.user+': '+tweet.tweet)
+					addBall(tweet.id,tweet.user,tweet.tweet,colors[topic])
+					since_id[topic] = tweet.id;
+				});
+		  }, "json");
+	}*/
+	function updateBalls(topic){
+		$.get("http://search.twitter.com/search.json", { since_id:since_id[topic], q:topic, count:5 },
+			function(data){
+				for(i=0; i<data.results.length; i++){
+					addBall(data.results[i].id,data.results[i].from_user,data.results[i].text,colors[topic]);
+				}
+		 }, "jsonp");
+	}
+	
+	// Funciones importantes:
+	function clear() {
+		ctx.clearRect(0, 0, WIDTH, HEIGHT);
+	}
+	
+	function circle(x,y,rad,color){
+		// Circulo
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(x,y,rad,0,Math.PI*2,true);
+		ctx.closePath();
+		ctx.fill();
+	}
+	
+	function resizeCanvas(e) {
+		WIDTH = window.innerWidth;
+		HEIGHT = window.innerHeight;
+		
+		$("#bg").attr('width',WIDTH);
+		$("#bg").attr('height',HEIGHT);
+	}
+	
+	function mouseMove(e) {
+		ms.x = Math.max( Math.min( e.pageX - mp.x, 40 ), -40 );
+		ms.y = Math.max( Math.min( e.pageY - mp.y, 40 ), -40 );
+		
+		mp.x = e.pageX - canvasMinX;
+		mp.y = e.pageY - canvasMinY;
+		
+	}
+	
+	function randColor(){
+		return Math.round(0xffffff * Math.random()).toString(16);
+	}
+	
+	var curTweet=0;
+	
+	function mouseDown(e){
+		// Posicion de raton
+		mp.x = e.pageX - canvasMinX;
+		mp.y = e.pageY - canvasMinY;
+		// Detectar click sobre bola
+		for(var i=0;i<ball.length;i++){
+			if(mp.x	> ball[i].x-ball[i].radius && mp.x	< ball[i].x+ball[i].radius && mp.y	> ball[i].y-ball[i].radius && mp.y	< ball[i].y+ball[i].radius){
+				// Click sobre bola hecho
+				ball[i].dx = 0;
+				ball[i].dy = 0;
+				ball[i].show = false;
+				if(curTweet!==0) curTweet.remove();
+				curTweet = $('#tweets').append('<div id="'+ball[i].id+'">@'+ball[i].user+':<br />'+ball[i].text+'</div>');
+				curTweet = $('#'+ball[i].id);
+				curTweet.addClass('tweet').css({
+					top:(ball[i].y-ball[i].radius-10)+'px',
+					left:(ball[i].x-ball[i].radius-10)+'px',
+					background:ball[i].color,
+					minHeight:(ball[i].radius+10)+'px'
+				});
+				break;
+			}else{
+				if(curTweet!==0) curTweet.remove();
+			}
+		}
+	}
+	
+	function randDir(){
+		return ((Math.random()-0.3)*speedMax);
+	}
+	function randRad(){	
+		return (Math.random()*maxRadius);
+	}
+	
+	function draw(e) {
+		clear()
+		// Refresh position:
+		for(var i=0;i<ball.length;i++){
+			// Slowly diminish balls
+			if(!ball[i].show) continue;
+			ball[i].radius -= ball[i].radius*miniRatio;
+			if(ball[i].radius < minRadius){
+				ball.splice(i,1);
+				continue;
+			}
+			// Bounce off walls
+			if( (ball[i].x-ball[i].radius)<0 || (ball[i].x+ball[i].radius)>WIDTH) ball[i].dx=-ball[i].dx;
+			if( (ball[i].y-ball[i].radius)<0 || (ball[i].y+ball[i].radius)>HEIGHT) ball[i].dy=-ball[i].dy;
+			// Bounce on each other
+			for(var a=0;a<ball.length;a++){ if(a!==i){
+				// Detectamos la colision, y modificamos el rumbo de la mas pesada
+				if(ball[a] && ball[i]){
+					if(distance(ball[a],ball[i]) <= ball[a].radius + ball[i].radius){
+						// Han chocado
+						// La pequeña rebota
+						if(ball[i].radius > ball[a].radius){
+							ball[a].dx=-ball[a].dx;
+							ball[a].dy=-ball[a].dy
+						}else{
+							ball[i].dx=-ball[i].dx;
+							ball[i].dy=-ball[i].dy
+						}
+					}
+				}
+			}}
+			if(ball[i]){
+				ball[i].x += ball[i].dx;
+				ball[i].y += ball[i].dy;
+				circle(ball[i].x,ball[i].y,ball[i].radius,ball[i].color);
+			}
+		}
+	}
+	
+	function distance(p1,p2){
+		var dx = p2.x-p1.x;
+		var dy = p2.y-p1.y;
+		return Math.sqrt(dx*dx + dy*dy);
+	}
+	
+	function frame(){
+		draw();
+		// Now calculate FPS
+		var thisFrameFPS = 1000 / ((now=new Date) - lastUpdate);
+		fps += (thisFrameFPS - fps) / fpsFilter;
+		lastUpdate = now * 1 - 1;
+	}
+	
+	// Display fps
+	setInterval(function(){ $('#fps').text('FPS: '+fps.toFixed(0)); }, 1000/60); 
+	// Reload balls
+	updateInterval1 = setInterval(function(){ updateBalls('nuostudio'); }, 3000); 
+	updateInterval1 = setInterval(function(){ updateBalls('#love'); }, 3000); 
+	updateInterval1 = setInterval(function(){ updateBalls('#hate'); }, 3000); 
+	updateInterval1 = setInterval(function(){ updateBalls('#music'); }, 3000); 
+	
+	updateBalls('nuostudio');
+	updateBalls('#love');
+	updateBalls('#hate');
+	updateBalls('#music');
+	
+	// Actualizadores
+	$(window).resize(resizeCanvas);
+	$(document).mousemove(mouseMove);
+	$(document).mousedown(mouseDown);
+	drawInterval = setInterval(frame, 1000/60);
+	resizeCanvas();
+});
+-->
+</script>
+</head>
+
+<body>
+<div id="fps">FPS: 0</div>
+<div id="searching">
+	<span style="color:#09C">nuostudio</span> &bull; <span style="color:#eb0000">#Love</span> &bull; <span style="color:#090">#Hate</span> &bull; <span style="color:#96F">#music</span>
+</div>
+<div id="web">
+    
+</div>
+<div id="background">
+<canvas width="100%" height="100%" id="bg"></canvas>
+</div>
+<div id="tweets"></div>
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-26633779-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

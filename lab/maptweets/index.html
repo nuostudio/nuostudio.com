@@ -1,0 +1,206 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Map Tweets Demo</title>
+<style type="text/css">
+html, body{
+	margin:0;
+	padding:0;
+	width:100%;
+	height:100%;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:100%;
+	overflow:hidden;
+}
+body{
+	background:rgb(65,98,174);
+	color:#000;
+}
+h1{
+	color:#000;
+	background:rgba(255,255,255,0.8);
+	display:inline-block;
+	padding-right:15px;
+	margin:0;
+	font-size:600%;
+	font-weight:400;
+	letter-spacing:-10px;
+	border-bottom:#CCC solid 10px;
+	position:absolute;
+	top:10px;
+	right:10px;
+	z-index:9;
+	box-shadow:0 2px 6px #333;
+}
+header{
+	position:absolute;
+	top:0px;
+	left:46%;
+	padding:10px 20px;
+	border-bottom-left-radius:10px;
+	border-bottom-right-radius:10px;
+	z-index:9;
+	background:rgba(255,255,255,0.8);
+	box-shadow:#222 0 0 10px;
+	display:none;
+}
+aside{
+	position:absolute;
+	top:50%;
+	left:50%;
+	z-index:9;
+	background:rgba(255,255,255,0.8);
+	padding:20px 30px;
+	border:#333 solid 1px;
+	box-shadow:#000 0 0 10px;
+	margin:-42px 0 0 -107px;
+	text-align:center;
+	border-radius:10px;
+}
+a, a:focus, a:visited, a:link{
+	color:#fff;
+	text-decoration:none;
+}
+a:hover{
+	color:#ccc;
+	text-decoration:underline;
+}
+#map{
+	width:100%;
+	height:600px;
+}
+#map a{
+	color:#09F;
+}
+footer{
+	position:absolute;
+	z-index:8;
+	bottom:40px;
+	left:3px;
+	text-shadow:#000 0 1px 3px;
+}
+input{
+	border:#999 solid 1px;
+	outline:none;
+	background:#FFF;
+	padding:3px 6px;
+}
+hr{
+	border:none;
+	border-bottom:#999 solid 1px;	
+}
+aside small{
+	color:#666;	
+}
+</style>
+<script type="text/javascript" src="lib/jquery.min.js"></script>
+<script type="text/javascript" src="https://maps.google.com/maps/api/js?sensor=false"></script>
+<script type="text/javascript" src="src/countries.js"></script>
+<script type="text/javascript" src="src/langCountry.js"></script>
+<script type="text/javascript" src="src/mapTweets.js"></script>
+<script type="text/javascript">
+
+function resize(){
+	$('#map').css({
+		height : $(window).height(),
+		width : $(window).width()
+	});	
+}
+
+$(document).ready(function(){
+	var opts = {
+			zoom: 3,
+			center: new google.maps.LatLng(30.178873, -4.570313),
+			disableDefaultUI: true,
+			mapTypeId: google.maps.MapTypeId.ROADMAP
+		},
+		map = new google.maps.Map($('#map').get(0), opts),
+		styles = [
+		  {
+			"stylers": [
+			  { "hue": "#004cff" },
+			  { "lightness": -38 }
+			]
+		  },{
+			"featureType": "administrative",
+			"stylers": [
+			  { "weight": 0.1 },
+			  { "lightness": 11 }
+			]
+		  },{
+			"featureType": "landscape",
+			"elementType": "geometry.fill",
+			"stylers": [
+			  { "color": "#809ff0" }
+			]
+		  },{
+			"featureType": "road",
+			"stylers": [
+			  { "visibility": "off" }
+			]
+		  }
+		];
+	
+	map.setOptions({styles: styles});
+	
+	// Create new mapTweets object
+	var tweets = new mapTweets(map);
+	
+	$('#changeTopic').submit(function(e){
+		e.preventDefault();
+		
+		$('aside').fadeOut();
+		$('header').fadeIn();
+		
+		// Start displaying tweets
+		tweets.start($('#topic').val());
+	});
+	
+	$("a[href='#stop']").click(function(e){
+		e.preventDefault();
+		$('aside').fadeIn();
+		tweets.stop();
+		tweets.clearMarkers();
+		$('header').fadeOut();
+	});
+	
+	resize();
+	
+	$(window).resize(function(){
+		resize();
+	});
+	
+	$('#topic').focus();
+});
+</script>
+</head>
+
+<body>
+<h1>Map Tweets</h1>
+<header><a href="#stop" style="color:#F00">Stop</a></header>
+<aside>
+	<form action="index.html" method="post" id="changeTopic">
+		<label>Enter topic to search for<br /><input type="text" name="topic" id="topic" placeholder="Topic" /></label>
+		<hr />
+		<div style="text-align:center"><small><span style="color:red">Twitter now requires Authentication to search, <br />I still have to update this code</span><br />Real time tweet location for any topic</small></div>
+	</form>
+</aside>
+<div id="map">Loading map...</div>
+<footer><a href="https://github.com/aurbano/MapTweets"><small>Fork on</small><br/>Github</a></footer>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-26633779-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+</body>
+</html>

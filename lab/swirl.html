@@ -1,0 +1,120 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Swirls</title>
+<style type="text/css">
+body{
+	margin:0;
+	padding:0;
+	background:#000;
+	position:relative;
+	color:#FFF;
+}
+#fps{
+	font-family:"Courier New", Courier, monospace;
+	font-size:13px;
+	position:absolute;
+	top:3px;
+	right:3px;	
+}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(e) {
+// VARIABLES
+	var ctx;
+	var WIDTH;
+	var HEIGHT;
+	
+	var canvasMinX;
+	var canvasMaxX;
+	
+	var canvasMinY;
+	var canvasMaxY;
+	
+	var rotation = 0; // Angulo de giro
+	
+	var ms = {x:0, y:0}; // Mouse speed
+	var mp = {x:0, y:0}; // Mouse position
+	
+	var fps = 0, now, lastUpdate = (new Date)*1 - 1;
+	var fpsFilter = 100;
+	
+	ctx = $('#bg')[0].getContext("2d");
+	// Adaptamos a la ventana:
+	ctx.canvas.width  = window.innerWidth;
+  	ctx.canvas.height = window.innerHeight;
+	
+	// Actualizamos las variables:
+	WIDTH = $("#bg").width();
+  	HEIGHT = $("#bg").height();
+	resizeCanvas();
+	
+	canvasMinX = $("#bg").offset().left;
+  	canvasMaxX = canvasMinX + WIDTH;
+	
+	canvasMinY = $("#bg").offset().top;
+  	canvasMaxY = canvasMinY + HEIGHT;
+	
+	// Funciones importantes:
+	function clear() {
+		ctx.clearRect(0, 0-HEIGHT/2, WIDTH, HEIGHT);
+	}
+	
+	function circle(x,y,rad,color){
+		// Circulo
+		ctx.fillStyle = color;
+		ctx.beginPath();
+		ctx.arc(x,y,rad,0,Math.PI*2,true);
+		ctx.closePath();
+		ctx.fill();
+	}
+	
+	function fade() {
+		ctx.fillStyle="rgba(0,0,0,0.01)";
+		ctx.fillRect(0, 0, WIDTH, HEIGHT);
+	}
+	
+	function resizeCanvas(e) {
+		WIDTH = window.innerWidth;
+		HEIGHT = window.innerHeight;
+		
+		$("#bg").attr('width',WIDTH);
+		$("#bg").attr('height',HEIGHT);
+	}
+	
+	function mouseMove(e) {
+		ms.x = Math.max( Math.min( e.pageX - mp.x, 40 ), -40 );
+		ms.y = Math.max( Math.min( e.pageY - mp.y, 40 ), -40 );
+		
+		mp.x = e.pageX - canvasMinX;
+		mp.y = e.pageY - canvasMinY;
+	}
+	
+	var loss = 0.01;		// Width loss per cycle
+	
+	// Creates swirls
+	// lifetime is the number of computed cycles
+	function swirl(x,y, start, dir, w, lifetime){
+		ctx.lineWidth = w-lifetime*loss;
+		ctx.beginPath();
+		// Starting point
+		ctx.moveTo(start.x, start.y);
+		// Now calculate the piece of arc to be drawn
+		//
+	}
+	
+	// Start up
+	ctx.strokeStyle = '#fff';
+	swirl(0,0,0,5,0);
+	$(document).mousemove(mouseMove);
+	$(window).resize(resizeCanvas);
+});
+</script>
+</head>
+
+<body>
+<canvas width="100%" height="100%" id="bg" style="color:#09F"></canvas>
+</body>
+</html>

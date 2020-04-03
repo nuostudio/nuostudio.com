@@ -1,0 +1,35 @@
+Options -Indexes
+Options -MultiViews
+
+<FilesMatch "\.(htaccess|htpasswd|ini|phps|log|bak)$">
+ Order Allow,Deny
+ Deny from all
+</FilesMatch>
+
+# 1 AÑO
+<FilesMatch "\.(ico|pdf|svg|eot|ttf|otf|woff)$">
+Header set Cache-Control "max-age=29030400, public"
+</FilesMatch>
+# 1 SEMANA
+<FilesMatch "\.(jpg|jpeg|png|gif|swf)$">
+Header set Cache-Control "max-age=604800, public"
+</FilesMatch>
+# 2 DIAS
+<FilesMatch "\.(js|css)$">
+Header set Cache-Control "max-age=172800, proxy-revalidate"
+</FilesMatch>
+# 1 MINUTO
+<FilesMatch "\.(html|htm|php)$">
+Header set Cache-Control "max-age=60, private, proxy-revalidate"
+</FilesMatch>
+
+RewriteEngine On 
+RewriteBase /
+
+RewriteCond %{HTTP_HOST} ^www\.nuostudio\.com [NC]
+RewriteRule (.*) http://nuostudio.com/$1 [R=301,L]
+
+#Friendly URLs
+RewriteCond %{REQUEST_FILENAME} !-f 
+RewriteCond %{REQUEST_FILENAME} !-d 
+RewriteRule ^(.*)$ $1.php [L,QSA]

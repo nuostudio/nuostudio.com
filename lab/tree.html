@@ -1,0 +1,176 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Tree Generator</title>
+<style type="text/css">
+body{
+	margin:0;
+	padding:0;
+	background:#000;
+	position:relative;
+	color:#FFF;
+}
+#fps{
+	font-family:"Courier New", Courier, monospace;
+	font-size:13px;
+	position:absolute;
+	top:3px;
+	right:3px;	
+}
+</style>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function(e) {
+// VARIABLES
+	var ctx;
+	var WIDTH;
+	var HEIGHT;
+	
+	var canvasMinX;
+	var canvasMaxX;
+	
+	var canvasMinY;
+	var canvasMaxY;
+	
+	var rotation = 0; // Angulo de giro
+	
+	var ms = {x:0, y:0}; // Mouse speed
+	var mp = {x:0, y:0}; // Mouse position
+	
+	var fps = 0, now, lastUpdate = (new Date)*1 - 1;
+	var fpsFilter = 100;
+	
+	ctx = $('#bg')[0].getContext("2d");
+	// Adaptamos a la ventana:
+	ctx.canvas.width  = window.innerWidth;
+  	ctx.canvas.height = window.innerHeight;
+	
+	// Actualizamos las variables:
+	WIDTH = $("#bg").width();
+  	HEIGHT = $("#bg").height();
+	resizeCanvas();
+	
+	canvasMinX = $("#bg").offset().left;
+  	canvasMaxX = canvasMinX + WIDTH;
+	
+	canvasMinY = $("#bg").offset().top;
+  	canvasMaxY = canvasMinY + HEIGHT;
+	
+	// Funciones importantes:
+	function clear() {
+		ctx.clearRect(0, 0-HEIGHT/2, WIDTH, HEIGHT);
+	}
+	
+	function circle(x,y,rad,color){
+		// Circulo
+		ctx.lineWidth = 1;
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		ctx.arc(x,y,rad,0,Math.PI*2,true);
+		ctx.closePath();
+		ctx.stroke();
+	}
+	
+	function fade() {
+		ctx.fillStyle="rgba(0,0,0,0.01)";
+		ctx.fillRect(0, 0, WIDTH, HEIGHT);
+	}
+	
+	function resizeCanvas(e) {
+		WIDTH = window.innerWidth;
+		HEIGHT = window.innerHeight;
+		
+		$("#bg").attr('width',WIDTH);
+		$("#bg").attr('height',HEIGHT);
+	}
+	
+	function mouseMove(e) {
+		ms.x = Math.max( Math.min( e.pageX - mp.x, 40 ), -40 );
+		ms.y = Math.max( Math.min( e.pageY - mp.y, 40 ), -40 );
+		
+		mp.x = e.pageX - canvasMinX;
+		mp.y = e.pageY - canvasMinY;
+	}
+	
+	var loss = 0.03;		// Width loss per cycle
+	var sleep = 30;			// Min sleep time (For the animation)
+	var branchLoss = 0.9;	// % width maintained for branches
+	var mainLoss = 0.9;		// % width maintained after branching
+	var speed = 0.3;		// Movement speed
+	var scatterRange = 5;		// Area around point where leaf scattering should occur
+	
+	// Starts a new branch from x,y. w is initial w
+	// lifetime is the number of computed cycles
+	function branch(x,y,dx,dy,w,lifetime){
+		ctx.lineWidth = w-lifetime*loss;
+		ctx.beginPath();
+		ctx.moveTo(x,y);
+		// Calculate new coords
+		x = x+dx;
+		y = y+dy;
+		// Change dir
+		dx = dx+Math.sin(Math.random()+lifetime)*speed;
+		dy = dy+Math.cos(Math.random()+lifetime)*speed;
+		// Check if branches are getting too low
+		if(w<6 && y > HEIGHT-Math.random()*(0.3*HEIGHT)) w = w*0.8;
+		//
+		ctx.strokeStyle = '#fff';
+		ctx.lineTo(x,y);
+		ctx.stroke();
+		// Generate new branches
+		// they should spawn after a certain lifetime has been met, although depending on the width
+		if(lifetime > 10*w+Math.random()*200){
+			setTimeout(function(){
+				// Marco el inicio de la rama
+				//circle(x,y,5,'rgba(255,0,0,0.4)');
+				branch(x,y,2*Math.sin(Math.random()+lifetime),2*Math.cos(Math.random()+lifetime),(w-lifetime*loss)*branchLoss,0);
+				// When it branches, it looses a bit of width
+				w *= mainLoss;
+			},200*Math.random()+sleep);
+		}
+		// Leaves
+		//if(w < 8) scatter(x,y,dx,dy,w,lifetime,0);
+		// Continua la rama
+		if(w-lifetime*loss>=1) setTimeout(function(){ branch(x,y,dx,dy,w,++lifetime); },30*Math.random()+sleep);
+	}
+	
+	// scatter: places leaves around the tree
+	// n is scatter cycles
+	function scatter(x,y,dx,dy,w,lifetime,n){
+		// Calc circle coords
+		// basically anything inside the scatter range
+		if(dx==0) dx = 0.0001; // Aprox to 0
+		m = -dy/dx;
+		// Circle coords:
+		cx = Math.random()*scatterRange+x;
+		cy = m*(x-cx)+y;	// Get y coord
+		circle(cx,cy,Math.random()*w,'rgba(0,255,0,0.3)');
+		if(Math.random()>0.5 && n < 10) setTimeout(function(){ scatter(x,y,dx,dy,w,lifetime,++n); }, sleep);
+	}
+	
+	// Start up
+	branch(WIDTH/2,HEIGHT,0,-3,10,0);
+	setInterval(function(){
+		branch((Math.random()*4)*WIDTH/4,HEIGHT,0,-Math.random()*3,10*Math.random(),0);
+	}, 250);
+	// Branch adding:
+	$('canvas').click(function(e){
+		e.preventDefault();
+		branch(mp.x, HEIGHT, -Math.random(), -3, Math.random()*10, 0);
+	});
+	$(document).mousemove(mouseMove);
+	$(window).resize(resizeCanvas);
+	/*
+	// Actualizadores
+	ctx.translate(0,HEIGHT/2);
+	drawInterval = setInterval( frame, 1 );
+	draw();*/
+});
+</script>
+</head>
+
+<body>
+<canvas width="100%" height="100%" id="bg" style="color:#09F"></canvas>
+</body>
+</html>
